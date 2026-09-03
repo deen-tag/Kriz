@@ -87,6 +87,10 @@ const ICONS = {
   history: svgIcon('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>'),
   tag: svgIcon('<path d="M20.59 13.41 11 22H2v-9L12.41 3.41A2 2 0 0 1 13.83 3H20a1 1 0 0 1 1 1v6.17a2 2 0 0 1-.59 1.41z"/><circle cx="7" cy="7" r="1.5"/>'),
   settings: svgIcon('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'),
+  chevronLeft: svgIcon('<polyline points="15 18 9 12 15 6"/>', 18),
+  chevronRight: svgIcon('<polyline points="9 18 15 12 9 6"/>', 18),
+  arrowUp: svgIcon('<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>', 22),
+  arrowDown: svgIcon('<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>', 22),
 };
 
 /* ---------- helpers ---------- */
@@ -94,24 +98,40 @@ function formatMoney(v) {
   const sign = v < 0 ? "−" : "";
   return `${sign}${Math.abs(v).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
 }
-function inPeriod(dateStr, period) {
+function inPeriod(dateStr, period, refDate) {
   const d = new Date(dateStr);
-  const now = new Date();
+  const ref = refDate || new Date();
   if (period === "Semaine") {
-    const start = new Date(now);
-    start.setDate(now.getDate() - now.getDay());
+    const start = new Date(ref);
+    start.setDate(ref.getDate() - ref.getDay());
     start.setHours(0, 0, 0, 0);
-    return d >= start;
+    const end = new Date(start);
+    end.setDate(start.getDate() + 7);
+    return d >= start && d < end;
   }
-  if (period === "Mois") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-  return d.getFullYear() === now.getFullYear();
+  if (period === "Mois") return d.getMonth() === ref.getMonth() && d.getFullYear() === ref.getFullYear();
+  return d.getFullYear() === ref.getFullYear();
 }
-function periodLabel(period) {
-  const now = new Date();
-  if (period === "Semaine") return "Cette semaine";
+function periodLabel(period, refDate) {
+  const ref = refDate || new Date();
+  if (period === "Semaine") {
+    const start = new Date(ref);
+    start.setDate(ref.getDate() - ref.getDay());
+    const end = new Date(start);
+    end.setDate(start.getDate() + 6);
+    const fmt = (d) => d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    return `${fmt(start)} – ${fmt(end)}`;
+  }
   if (period === "Mois")
-    return now.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }).replace(/^./, (c) => c.toUpperCase());
-  return String(now.getFullYear());
+    return ref.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }).replace(/^./, (c) => c.toUpperCase());
+  return String(ref.getFullYear());
+}
+function shiftRef(period, refDate, dir) {
+  const d = new Date(refDate);
+  if (period === "Semaine") d.setDate(d.getDate() + dir * 7);
+  else if (period === "Mois") d.setMonth(d.getMonth() + dir);
+  else d.setFullYear(d.getFullYear() + dir);
+  return d;
 }
 function escapeHtml(s) {
   const d = document.createElement("div");
@@ -123,6 +143,7 @@ function escapeHtml(s) {
 const state = {
   transactions: [],
   period: "Mois",
+  refDate: new Date(),
   label: "",
   amount: "",
   tags: [...DEFAULT_TAGS],
@@ -131,7 +152,8 @@ const state = {
 };
 
 /* ---------- actions ---------- */
-function setPeriod(p) { state.period = p; render(); }
+function setPeriod(p) { state.period = p; state.refDate = new Date(); render(); }
+function navPeriod(dir) { state.refDate = shiftRef(state.period, state.refDate, dir); render(); }
 
 function submit(type) {
   const amt = parseFloat(String(state.amount).replace(",", "."));
@@ -203,7 +225,7 @@ function pressAndSubmit(type, btnId) {
 /* ---------- render ---------- */
 function render() {
   const filtered = state.transactions
-    .filter((t) => inPeriod(t.date, state.period))
+    .filter((t) => inPeriod(t.date, state.period, state.refDate))
     .sort((a, b) => new Date(b.date) - new Date(a.date));
   const entries = filtered.filter((t) => t.type === "in");
   const outs = filtered.filter((t) => t.type === "out");
@@ -270,10 +292,15 @@ function render() {
         `).join("")}
       </div>
 
-      <div style="text-align:center;padding:36px 0 28px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:16px;">
+        <button id="nav-prev" class="action-btn enabled" style="width:40px;height:40px;background:#131A26;color:#F3F5F9;border:1px solid #1E2635;">${ICONS.chevronLeft}</button>
+        <div style="font-size:16px;font-weight:700;">${periodLabel(state.period, state.refDate)}</div>
+        <button id="nav-next" class="action-btn enabled" style="width:40px;height:40px;background:#131A26;color:#F3F5F9;border:1px solid #1E2635;">${ICONS.chevronRight}</button>
+      </div>
+
+      <div style="text-align:center;padding:24px 0 28px;">
         <div class="balance-label">Il vous reste</div>
         <div class="balance-value" style="color:${balance < 0 ? COLORS.coral : "#F3F5F9"}">${formatMoney(balance)}</div>
-        <div class="balance-period">${periodLabel(state.period)}</div>
       </div>
 
       ${isEmpty
@@ -286,9 +313,9 @@ function render() {
 
       <div class="add-zone">
         <div class="add-row">
-          <button id="btn-plus" class="action-btn ${amountEnabled ? "enabled" : ""}" style="background:${amountEnabled ? COLORS.green : "#1E2635"};color:${amountEnabled ? "#0A0E16" : "#8892A4"};box-shadow:${amountEnabled ? `0 0 0 3px ${COLORS.green}22` : "none"}">${ICONS.plus}</button>
+          <button id="btn-plus" class="action-btn ${amountEnabled ? "enabled" : ""}" style="background:${amountEnabled ? COLORS.green : "#1E2635"};color:${amountEnabled ? "#0A0E16" : "#8892A4"};box-shadow:${amountEnabled ? `0 0 0 3px ${COLORS.green}22` : "none"}">${ICONS.arrowUp}</button>
           <input id="label-input" class="add-input" placeholder="Libellé (facultatif)" value="${escapeHtml(state.label)}" />
-          <button id="btn-minus" class="action-btn ${amountEnabled ? "enabled" : ""}" style="background:${amountEnabled ? COLORS.coral : "#1E2635"};color:${amountEnabled ? "#0A0E16" : "#8892A4"};box-shadow:${amountEnabled ? `0 0 0 3px ${COLORS.coral}22` : "none"}">${ICONS.minus}</button>
+          <button id="btn-minus" class="action-btn ${amountEnabled ? "enabled" : ""}" style="background:${amountEnabled ? COLORS.coral : "#1E2635"};color:${amountEnabled ? "#0A0E16" : "#8892A4"};box-shadow:${amountEnabled ? `0 0 0 3px ${COLORS.coral}22` : "none"}">${ICONS.arrowDown}</button>
         </div>
         <div class="hint-row">
           <span class="hint">+ ajoute direct en entrée</span>
@@ -328,6 +355,9 @@ function wireEvents() {
   document.querySelectorAll(".period-tab").forEach((btn) => {
     btn.addEventListener("click", () => setPeriod(btn.dataset.period));
   });
+
+  document.getElementById("nav-prev").addEventListener("click", () => navPeriod(-1));
+  document.getElementById("nav-next").addEventListener("click", () => navPeriod(1));
 
   document.getElementById("btn-plus").addEventListener("click", () => pressAndSubmit("in", "btn-plus"));
   document.getElementById("btn-minus").addEventListener("click", () => pressAndSubmit("out", "btn-minus"));

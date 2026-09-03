@@ -91,6 +91,8 @@ const ICONS = {
   chevronRight: svgIcon('<polyline points="9 18 15 12 9 6"/>', 18),
   arrowUp: svgIcon('<line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>', 22),
   arrowDown: svgIcon('<line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/>', 22),
+  cornerLeftUp: svgIcon('<polyline points="14 9 9 4 4 9"/><path d="M20 20h-7a4 4 0 0 1-4-4V4"/>', 22),
+  cornerRightUp: svgIcon('<polyline points="10 9 15 4 20 9"/><path d="M4 20h7a4 4 0 0 0 4-4V4"/>', 22),
 };
 
 /* ---------- helpers ---------- */
@@ -304,18 +306,19 @@ function render() {
       </div>
 
       ${isEmpty
-        ? `<div style="text-align:center;padding:20px 0 32px;">
+        ? `<div style="text-align:center;padding:0 0 16px;">
              <div style="font-size:17px;font-weight:700;margin-bottom:6px;">Commencez votre budget</div>
              <div style="color:#8892A4;font-size:14px;">Ajoutez votre première entrée ou sortie.</div>
            </div>`
-        : `<div class="cols">${renderColumn("Entrées", COLORS.green, entries, "+")}${renderColumn("Sorties", COLORS.coral, outs, "−")}</div>`
+        : ""
       }
+      <div class="cols">${renderColumn("Entrées", COLORS.green, entries, "+")}${renderColumn("Sorties", COLORS.coral, outs, "−")}</div>
 
       <div class="add-zone">
         <div class="add-row">
-          <button id="btn-plus" class="action-btn ${amountEnabled ? "enabled" : ""}" style="background:${amountEnabled ? COLORS.green : "#1E2635"};color:${amountEnabled ? "#0A0E16" : "#8892A4"};box-shadow:${amountEnabled ? `0 0 0 3px ${COLORS.green}22` : "none"}">${ICONS.arrowUp}</button>
+          <button id="btn-plus" class="action-btn ${amountEnabled ? "enabled" : ""}" style="background:${amountEnabled ? COLORS.green : "#1E2635"};color:${amountEnabled ? "#0A0E16" : "#8892A4"};box-shadow:${amountEnabled ? `0 0 0 3px ${COLORS.green}22` : "none"}">${ICONS.cornerLeftUp}</button>
           <input id="label-input" class="add-input" placeholder="Libellé (facultatif)" value="${escapeHtml(state.label)}" />
-          <button id="btn-minus" class="action-btn ${amountEnabled ? "enabled" : ""}" style="background:${amountEnabled ? COLORS.coral : "#1E2635"};color:${amountEnabled ? "#0A0E16" : "#8892A4"};box-shadow:${amountEnabled ? `0 0 0 3px ${COLORS.coral}22` : "none"}">${ICONS.arrowDown}</button>
+          <button id="btn-minus" class="action-btn ${amountEnabled ? "enabled" : ""}" style="background:${amountEnabled ? COLORS.coral : "#1E2635"};color:${amountEnabled ? "#0A0E16" : "#8892A4"};box-shadow:${amountEnabled ? `0 0 0 3px ${COLORS.coral}22` : "none"}">${ICONS.cornerRightUp}</button>
         </div>
         <div class="hint-row">
           <span class="hint">+ ajoute direct en entrée</span>

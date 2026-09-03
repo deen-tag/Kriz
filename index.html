@@ -1,682 +1,351 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Kriz — mon budget</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Kriz</title>
 <style>
-  :root{
-    --paper:#EEF1EA;
-    --paper-2:#E4E9DD;
-    --ink:#1B2A22;
-    --ink-soft:#5B6B5F;
-    --line:#C9D2C1;
-    --gold:#C9A227;
-    --green:#2F7D4F;
-    --green-bg:#E4EFE3;
-    --rust:#B4432E;
-    --rust-bg:#F4E4DE;
-    --card:#FBFAF6;
-    --radius:14px;
+  html, body { margin: 0; padding: 0; }
+  * { box-sizing: border-box; }
+  body {
+    background: #0A0E16;
+    color: #F3F5F9;
+    font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
   }
-  *{box-sizing:border-box;}
-  body{margin:0;}
-  .kriz-app{
-    background:var(--paper);
-    color:var(--ink);
-    font-family:'Space Mono', monospace;
-    min-height:100vh;
-    padding:0 0 48px 0;
-  }
-  .kriz-app *{font-family:inherit;}
-  .serif{font-family:'Fraunces', serif;}
-
-  /* header */
-  .krz-header{
-    padding:28px 20px 22px;
-    border-bottom:2px solid var(--ink);
-    position:relative;
-    overflow:hidden;
-  }
-  .krz-brand{
-    display:flex;
-    align-items:baseline;
-    justify-content:space-between;
-    margin-bottom:22px;
-  }
-  .krz-brand h1{
-    font-family:'Fraunces', serif;
-    font-weight:700;
-    font-size:1.7rem;
-    letter-spacing:0.5px;
-    margin:0;
-  }
-  .krz-brand h1 span{color:var(--gold);}
-  .krz-tabs{
-    display:flex;
-    gap:2px;
-    background:var(--ink);
-    border-radius:999px;
-    padding:3px;
-  }
-  .krz-tab{
-    border:none;
-    background:transparent;
-    color:var(--paper);
-    font-family:'Space Mono', monospace;
-    font-size:0.7rem;
-    padding:6px 12px;
-    border-radius:999px;
-    cursor:pointer;
-    transition:background .2s, color .2s;
-  }
-  .krz-tab.active{
-    background:var(--gold);
-    color:var(--ink);
-  }
-
-  .krz-remaining-label{
-    font-size:0.8rem;
-    color:var(--ink-soft);
-    margin:0 0 4px;
-  }
-  .krz-remaining{
-    display:flex;
-    align-items:baseline;
-    gap:6px;
-    flex-wrap:wrap;
-  }
-  .krz-amount{
-    font-family:'Fraunces', serif;
-    font-weight:700;
-    font-size:clamp(2.6rem, 12vw, 4rem);
-    line-height:1;
-    letter-spacing:-1px;
-    transition: transform .15s ease;
-  }
-  .krz-amount.up{color:var(--green);}
-  .krz-amount.down{color:var(--rust);}
-  .krz-amount.roll{
-    animation: krz-roll .55s ease;
-  }
-  @keyframes krz-roll{
-    0%{transform:translateY(0);}
-    35%{transform:translateY(-10px);}
-    60%{transform:translateY(4px);}
-    100%{transform:translateY(0);}
-  }
-  .krz-currency{font-size:1.4rem; font-weight:400; color:var(--ink-soft);}
-  .krz-sub{
-    margin-top:8px;
-    font-size:0.78rem;
-    color:var(--ink-soft);
-  }
-  .krz-sub b{color:var(--ink);}
-
-  /* add button + list */
-  .krz-body{
-    max-width:640px;
-    margin:0 auto;
-    padding:22px 20px 0;
-  }
-  .krz-add-row{
-    display:flex;
-    gap:10px;
-    margin-bottom:18px;
-  }
-  .krz-add-btn{
-    flex:1;
-    background:var(--ink);
-    color:var(--paper);
-    border:none;
-    border-radius:var(--radius);
-    padding:13px 16px;
-    font-family:'Space Mono', monospace;
-    font-size:0.85rem;
-    cursor:pointer;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    gap:8px;
-    transition: transform .12s ease;
-  }
-  .krz-add-btn:active{transform:scale(0.97);}
-  .krz-add-btn.entree{background:var(--green);}
-  .krz-add-btn.sortie{background:var(--rust);}
-
-  .krz-section-title{
-    font-family:'Fraunces', serif;
-    font-size:1rem;
-    font-weight:600;
-    margin:26px 0 10px;
-    color:var(--ink);
-  }
-
-  .krz-list{
-    display:flex;
-    flex-direction:column;
-    gap:8px;
-  }
-  .krz-empty{
-    color:var(--ink-soft);
-    font-size:0.82rem;
-    padding:18px 4px;
-    border:1px dashed var(--line);
-    border-radius:var(--radius);
-    text-align:center;
-  }
-  .krz-row{
-    background:var(--card);
-    border-radius:var(--radius);
-    padding:12px 14px;
-    display:flex;
-    align-items:center;
-    gap:12px;
-    border-left:4px solid var(--green);
-  }
-  .krz-row.sortie{border-left-color:var(--rust);}
-
-  .krz-row.krz-row-new.entree{
-    animation: krz-pop-in-green .6s cubic-bezier(.16,.9,.3,1);
-  }
-  .krz-row.krz-row-new.sortie{
-    animation: krz-pop-in-rust .6s cubic-bezier(.16,.9,.3,1);
-  }
-  @keyframes krz-pop-in-green{
-    0%{opacity:0; transform:translateY(16px) scale(0.96); background:var(--green); border-left-color:var(--green);}
-    35%{opacity:1; transform:translateY(-2px) scale(1.015); background:var(--green-bg);}
-    100%{opacity:1; transform:translateY(0) scale(1); background:var(--card);}
-  }
-  @keyframes krz-pop-in-rust{
-    0%{opacity:0; transform:translateY(16px) scale(0.96); background:var(--rust); border-left-color:var(--rust);}
-    35%{opacity:1; transform:translateY(-2px) scale(1.015); background:var(--rust-bg);}
-    100%{opacity:1; transform:translateY(0) scale(1); background:var(--card);}
-  }
-  .krz-row.krz-row-new .krz-row-title,
-  .krz-row.krz-row-new .krz-row-date,
-  .krz-row.krz-row-new .krz-row-amount{
-    animation: krz-text-in .5s ease;
-  }
-  @keyframes krz-text-in{
-    from{opacity:0;}
-    40%{opacity:0;}
-    to{opacity:1;}
-  }
-  .krz-row-main{flex:1; min-width:0;}
-  .krz-row-title{
-    font-family:'Fraunces', serif;
-    font-size:0.95rem;
-    font-weight:600;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-  }
-  .krz-row-date{
-    font-size:0.68rem;
-    color:var(--ink-soft);
-    margin-top:2px;
-  }
-  .krz-row-amount{
-    font-weight:700;
-    font-size:0.92rem;
-    white-space:nowrap;
-  }
-  .krz-row.entree .krz-row-amount{color:var(--green);}
-  .krz-row.sortie .krz-row-amount{color:var(--rust);}
-  .krz-row-del{
-    background:none;
-    border:none;
-    color:var(--ink-soft);
-    font-size:1rem;
-    cursor:pointer;
-    padding:2px 4px;
-    line-height:1;
-  }
-  .krz-row-del:hover{color:var(--rust);}
-
-  /* stats */
-  .krz-stats{
-    margin-top:30px;
-    background:var(--card);
-    border-radius:var(--radius);
-    padding:18px;
-    display:flex;
-    gap:18px;
-    align-items:center;
-    flex-wrap:wrap;
-  }
-  .krz-chart-wrap{
-    width:120px;
-    height:120px;
-    flex-shrink:0;
-  }
-  .krz-stats-legend{
-    flex:1;
-    min-width:160px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-  }
-  .krz-legend-item{
-    display:flex;
-    justify-content:space-between;
-    font-size:0.8rem;
-    border-bottom:1px solid var(--line);
-    padding-bottom:8px;
-  }
-  .krz-legend-item:last-child{border-bottom:none; padding-bottom:0;}
-  .krz-legend-dot{
-    display:inline-block;
-    width:9px;height:9px;
-    border-radius:50%;
-    margin-right:6px;
-  }
-
-  /* modal */
-  .krz-overlay{
-    position:fixed; inset:0;
-    background:rgba(27,42,34,0.55);
-    display:flex;
-    align-items:flex-end;
-    justify-content:center;
-    z-index:50;
-    opacity:0;
-    pointer-events:none;
-    transition:opacity .2s ease;
-  }
-  .krz-overlay.open{opacity:1; pointer-events:auto;}
-  .krz-modal{
-    background:var(--paper);
-    width:100%;
-    max-width:480px;
-    border-radius:20px 20px 0 0;
-    padding:22px 20px 28px;
-    transform:translateY(30px);
-    transition:transform .25s ease;
-    border-top:3px solid var(--ink);
-  }
-  .krz-overlay.open .krz-modal{transform:translateY(0);}
-  .krz-modal h2{
-    font-family:'Fraunces', serif;
-    font-size:1.25rem;
-    margin:0 0 16px;
-  }
-  .krz-field{margin-bottom:14px;}
-  .krz-field label{
-    display:block;
-    font-size:0.7rem;
-    color:var(--ink-soft);
-    margin-bottom:5px;
-  }
-  .krz-field input{
-    width:100%;
-    padding:11px 12px;
-    border-radius:10px;
-    border:1.5px solid var(--line);
-    background:var(--card);
-    color:var(--ink);
-    font-family:'Space Mono', monospace;
-    font-size:0.95rem;
-  }
-  .krz-field input:focus{outline:2px solid var(--gold); border-color:var(--gold);}
-  .krz-type-toggle{
-    display:flex;
-    gap:8px;
-    margin-bottom:18px;
-  }
-  .krz-type-btn{
-    flex:1;
-    padding:11px;
-    border-radius:10px;
-    border:1.5px solid var(--line);
-    background:var(--card);
-    font-family:'Space Mono', monospace;
-    font-size:0.82rem;
-    cursor:pointer;
-    color:var(--ink-soft);
-  }
-  .krz-type-btn.active.entree{background:var(--green-bg); border-color:var(--green); color:var(--green); font-weight:700;}
-  .krz-type-btn.active.sortie{background:var(--rust-bg); border-color:var(--rust); color:var(--rust); font-weight:700;}
-  .krz-modal-actions{
-    display:flex;
-    gap:10px;
-  }
-  .krz-btn-cancel{
-    background:none;
-    border:1.5px solid var(--line);
-    color:var(--ink-soft);
-    border-radius:10px;
-    padding:12px;
-    flex:1;
-    font-family:'Space Mono', monospace;
-    cursor:pointer;
-  }
-  .krz-btn-valider{
-    background:var(--ink);
-    color:var(--paper);
-    border:none;
-    border-radius:10px;
-    padding:12px;
-    flex:2;
-    font-family:'Space Mono', monospace;
-    font-size:0.9rem;
-    cursor:pointer;
-  }
-  .krz-btn-valider:active{transform:scale(0.98);}
-
-  /* pulse on the header total when a new movement lands */
-  .krz-header.pulse-entree{ animation: krz-header-glow-green .65s ease; }
-  .krz-header.pulse-sortie{ animation: krz-header-glow-rust .65s ease; }
-  @keyframes krz-header-glow-green{
-    0%{box-shadow: inset 0 0 0 0 rgba(47,125,79,0);}
-    30%{box-shadow: inset 0 -60px 40px -40px rgba(47,125,79,0.18);}
-    100%{box-shadow: inset 0 0 0 0 rgba(47,125,79,0);}
-  }
-  @keyframes krz-header-glow-rust{
-    0%{box-shadow: inset 0 0 0 0 rgba(180,67,46,0);}
-    30%{box-shadow: inset 0 -60px 40px -40px rgba(180,67,46,0.18);}
-    100%{box-shadow: inset 0 0 0 0 rgba(180,67,46,0);}
-  }
-
-  .krz-loading{
-    text-align:center;
-    padding:40px;
-    color:var(--ink-soft);
-    font-size:0.85rem;
-  }
+  input::placeholder { color: #5C6579; }
+  ::-webkit-scrollbar { width: 0; height: 0; }
+  button { font-family: inherit; }
+  @keyframes rowIn { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  .kriz-row-in { animation: rowIn .35s ease-out; }
+  .wrap { max-width: 480px; margin: 0 auto; padding: 0 20px 100px; }
+  .period-tabs { display: flex; background: #131A26; border: 1px solid #1E2635; border-radius: 14px; padding: 4px; margin-top: 12px; }
+  .period-tab { flex: 1; padding: 9px 0; border-radius: 10px; border: none; cursor: pointer; background: transparent; color: #8892A4; font-size: 13.5px; font-weight: 500; transition: all .2s ease; }
+  .period-tab.active { background: #1E2635; color: #F3F5F9; font-weight: 600; }
+  .balance-label { color: #8892A4; font-size: 14.5px; margin-bottom: 6px; }
+  .balance-value { font-size: 46px; font-weight: 800; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .balance-period { color: #8892A4; font-size: 13.5px; margin-top: 6px; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .col-card { background: #0F1520; border: 1px solid #1E2635; border-radius: 16px; padding: 14px; min-height: 90px; }
+  .col-title { display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #8892A4; margin-bottom: 10px; font-weight: 600; }
+  .dot { width: 7px; height: 7px; border-radius: 999px; display: inline-block; }
+  .row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
+  .row-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row-amount { font-weight: 700; font-variant-numeric: tabular-nums; flex-shrink: 0; }
+  .empty { color: #8892A4; font-size: 12.5px; }
+  .add-zone { margin-top: 22px; background: #131A26; border: 1px solid #1E2635; border-radius: 18px; padding: 16px; }
+  .add-row { display: flex; align-items: center; gap: 10px; }
+  .action-btn { width: 48px; height: 48px; border-radius: 12px; border: none; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all .15s ease; background: #1E2635; color: #8892A4; cursor: default; }
+  .action-btn.enabled { cursor: pointer; }
+  .action-btn.pressed { transform: scale(0.9); }
+  .add-input { flex: 1; background: #0E1420; border: 1px solid #1E2635; border-radius: 12px; padding: 11px 12px; color: #F3F5F9; font-size: 14.5px; outline: none; min-width: 0; }
+  .hint-row { display: flex; justify-content: space-between; margin-top: 4px; padding: 0 2px; }
+  .hint { font-size: 10px; color: #8892A4; letter-spacing: 0.02em; }
+  .amount-input { width: 100%; margin-top: 10px; background: #0E1420; border: 1px solid #1E2635; border-radius: 12px; padding: 12px 14px; color: #F3F5F9; font-size: 17px; font-weight: 600; outline: none; box-sizing: border-box; font-variant-numeric: tabular-nums; }
+  .tags-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .tag-btn { border: 1px solid #1E2635; background: transparent; color: #8892A4; border-radius: 999px; padding: 6px 12px; font-size: 13px; cursor: pointer; transition: all .15s ease; }
+  .tag-btn.active { }
+  .tag-btn.dashed { border-style: dashed; }
+  .stats-title { font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+  .stats-row { display: flex; align-items: center; gap: 20px; }
+  .donut { width: 120px; height: 120px; border-radius: 50%; flex-shrink: 0; position: relative; }
+  .donut-hole { position: absolute; inset: 20px; border-radius: 50%; background: #0A0E16; }
+  .legend { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+  .legend-row { display: flex; justify-content: space-between; font-size: 13.5px; }
+  .legend-label { color: #8892A4; display: flex; align-items: center; gap: 8px; }
+  .legend-pct { font-weight: 600; }
+  .quote { text-align: center; color: #8892A4; font-size: 12.5px; margin-top: 40px; font-style: italic; }
+  .bottomnav { position: fixed; bottom: 0; left: 0; right: 0; background: #0D1220; border-top: 1px solid #1E2635; display: flex; justify-content: space-around; padding: 10px 0 14px; }
+  .navicon { display: flex; flex-direction: column; align-items: center; gap: 3px; color: #8892A4; }
+  .navicon.active { color: #3ECF8E; }
+  .navicon span { font-size: 10.5px; }
 </style>
 </head>
 <body>
-<div class="kriz-app" id="krizApp">
-  <div class="krz-header">
-    <div class="krz-brand">
-      <h1>K<span>riz</span></h1>
-      <div class="krz-tabs" id="krzTabs">
-        <button class="krz-tab" data-period="semaine">Semaine</button>
-        <button class="krz-tab active" data-period="mois">Mois</button>
-        <button class="krz-tab" data-period="annee">Année</button>
-      </div>
-    </div>
-    <p class="krz-remaining-label" id="krzPeriodLabel">Il vous reste ce mois-ci</p>
-    <div class="krz-remaining">
-      <div class="krz-amount" id="krzAmount">0,00</div>
-      <div class="krz-currency">€</div>
-    </div>
-    <p class="krz-sub" id="krzSub">&nbsp;</p>
-  </div>
-
-  <div class="krz-body">
-    <div class="krz-add-row">
-      <button class="krz-add-btn entree" id="btnAddEntree">+ Entrée</button>
-      <button class="krz-add-btn sortie" id="btnAddSortie">+ Sortie</button>
-    </div>
-
-    <h3 class="krz-section-title">Mouvements</h3>
-    <div class="krz-list" id="krzList">
-      <div class="krz-loading">Chargement…</div>
-    </div>
-
-    <h3 class="krz-section-title">Statistiques</h3>
-    <div class="krz-stats">
-      <div class="krz-chart-wrap"><canvas id="krzChart"></canvas></div>
-      <div class="krz-stats-legend" id="krzLegend"></div>
-    </div>
-  </div>
-</div>
-
-<div class="krz-overlay" id="krzOverlay">
-  <div class="krz-modal">
-    <h2 id="krzModalTitle">Nouvelle entrée</h2>
-    <div class="krz-type-toggle">
-      <button class="krz-type-btn entree" id="typeEntree">↑ Entrée</button>
-      <button class="krz-type-btn sortie" id="typeSortie">↓ Sortie</button>
-    </div>
-    <div class="krz-field">
-      <label>Titre</label>
-      <input type="text" id="krzTitle" placeholder="Ex : Courses, Salaire, Loyer…" maxlength="40">
-    </div>
-    <div class="krz-field">
-      <label>Montant (€)</label>
-      <input type="number" id="krzAmountInput" placeholder="0.00" step="0.01" min="0" inputmode="decimal">
-    </div>
-    <div class="krz-modal-actions">
-      <button class="krz-btn-cancel" id="krzCancel">Annuler</button>
-      <button class="krz-btn-valider" id="krzValider">Valider</button>
-    </div>
-  </div>
-</div>
+<div id="root"></div>
 
 <script>
-(function(){
-  const STORAGE_KEY = 'kriz:transactions';
-  let transactions = [];
-  let currentType = 'entree';
-  let currentPeriod = 'mois';
-  let chart = null;
-  let displayedValue = 0;
+/* ---------- tokens ---------- */
+const COLORS = {
+  green: "#3ECF8E",
+  coral: "#F2634B",
+};
 
-  const fmt = (n) => n.toLocaleString('fr-FR', {minimumFractionDigits:2, maximumFractionDigits:2});
+const DEFAULT_TAGS = ["Courses", "Maison", "Transport", "Loisirs", "Salaire", "Abonnement", "Restaurant"];
 
-  async function loadData(){
-    try{
-      const res = await window.storage.get(STORAGE_KEY, false);
-      transactions = res && res.value ? JSON.parse(res.value) : [];
-    }catch(e){
-      transactions = [];
-    }
+const TAG_COLORS = {
+  Courses: "#3ECF8E", Maison: "#7C9CF2", Transport: "#F2B24B", Loisirs: "#B892F2",
+  Salaire: "#3ECF8E", Abonnement: "#F2634B", Restaurant: "#F2896B", Autres: "#5A6478",
+};
+
+/* ---------- icons (inline SVG strings) ---------- */
+const svgIcon = (inner, size = 20) =>
+  `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${inner}</svg>`;
+const ICONS = {
+  plus: svgIcon('<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>', 20),
+  minus: svgIcon('<line x1="5" y1="12" x2="19" y2="12"/>', 20),
+  home: svgIcon('<path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>'),
+  history: svgIcon('<path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/>'),
+  tag: svgIcon('<path d="M20.59 13.41 11 22H2v-9L12.41 3.41A2 2 0 0 1 13.83 3H20a1 1 0 0 1 1 1v6.17a2 2 0 0 1-.59 1.41z"/><circle cx="7" cy="7" r="1.5"/>'),
+  settings: svgIcon('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>'),
+};
+
+/* ---------- helpers ---------- */
+function formatMoney(v) {
+  const sign = v < 0 ? "−" : "";
+  return `${sign}${Math.abs(v).toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
+}
+function inPeriod(dateStr, period) {
+  const d = new Date(dateStr);
+  const now = new Date();
+  if (period === "Semaine") {
+    const start = new Date(now);
+    start.setDate(now.getDate() - now.getDay());
+    start.setHours(0, 0, 0, 0);
+    return d >= start;
+  }
+  if (period === "Mois") return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+  return d.getFullYear() === now.getFullYear();
+}
+function periodLabel(period) {
+  const now = new Date();
+  if (period === "Semaine") return "Cette semaine";
+  if (period === "Mois")
+    return now.toLocaleDateString("fr-FR", { month: "long", year: "numeric" }).replace(/^./, (c) => c.toUpperCase());
+  return String(now.getFullYear());
+}
+function escapeHtml(s) {
+  const d = document.createElement("div");
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+/* ---------- state ---------- */
+const state = {
+  transactions: [],
+  period: "Mois",
+  label: "",
+  amount: "",
+  tags: [...DEFAULT_TAGS],
+  activeTag: null,
+  lastAddedId: null,
+};
+
+/* ---------- actions ---------- */
+function setPeriod(p) { state.period = p; render(); }
+
+function submit(type) {
+  const amt = parseFloat(String(state.amount).replace(",", "."));
+  if (!amt || amt <= 0) return;
+  const id = `t${Date.now()}`;
+  state.transactions.unshift({
+    id,
+    label: state.label.trim() || (type === "in" ? "Entrée" : "Sortie"),
+    amount: amt,
+    type,
+    tag: state.activeTag || "Autres",
+    date: new Date().toISOString(),
+  });
+  state.lastAddedId = id;
+  state.label = "";
+  state.amount = "";
+  state.activeTag = null;
+  render();
+  setTimeout(() => { state.lastAddedId = null; }, 700);
+}
+
+function pickTag(t) {
+  state.activeTag = t;
+  if (!state.label) state.label = t;
+  render();
+}
+
+function newTag() {
+  const name = window.prompt("Nom du nouveau libellé (ex: Vacances)");
+  if (name && name.trim()) {
+    const clean = name.trim();
+    if (!state.tags.includes(clean)) state.tags.push(clean);
+    state.activeTag = clean;
+    state.label = clean;
     render();
   }
+}
 
-  async function saveData(){
-    try{
-      await window.storage.set(STORAGE_KEY, JSON.stringify(transactions), false);
-    }catch(e){
-      console.error('Erreur de sauvegarde', e);
-    }
+function onLabelInput(v) { state.label = v; }
+function onAmountInput(v) {
+  state.amount = v;
+  const enabled = !!v;
+  const plusBtn = document.getElementById("btn-plus");
+  const minusBtn = document.getElementById("btn-minus");
+  if (plusBtn) {
+    plusBtn.classList.toggle("enabled", enabled);
+    plusBtn.style.background = enabled ? COLORS.green : "#1E2635";
+    plusBtn.style.color = enabled ? "#0A0E16" : "#8892A4";
+    plusBtn.style.boxShadow = enabled ? `0 0 0 3px ${COLORS.green}22` : "none";
   }
-
-  function periodStart(period){
-    const now = new Date();
-    if(period === 'semaine'){
-      const day = (now.getDay() + 6) % 7; // lundi = 0
-      const d = new Date(now);
-      d.setHours(0,0,0,0);
-      d.setDate(now.getDate() - day);
-      return d;
-    }
-    if(period === 'annee'){
-      return new Date(now.getFullYear(), 0, 1);
-    }
-    return new Date(now.getFullYear(), now.getMonth(), 1);
+  if (minusBtn) {
+    minusBtn.classList.toggle("enabled", enabled);
+    minusBtn.style.background = enabled ? COLORS.coral : "#1E2635";
+    minusBtn.style.color = enabled ? "#0A0E16" : "#8892A4";
+    minusBtn.style.boxShadow = enabled ? `0 0 0 3px ${COLORS.coral}22` : "none";
   }
+}
 
-  function filtered(){
-    const start = periodStart(currentPeriod);
-    return transactions.filter(t => new Date(t.date) >= start);
+function pressAndSubmit(type, btnId) {
+  if (!state.amount) return;
+  const btn = document.getElementById(btnId);
+  if (btn) {
+    btn.classList.add("pressed");
+    setTimeout(() => btn.classList.remove("pressed"), 250);
   }
+  submit(type);
+}
 
-  function computeTotals(list){
-    let entrees = 0, sorties = 0;
-    list.forEach(t => t.type === 'entree' ? entrees += t.amount : sorties += t.amount);
-    return {entrees, sorties, solde: entrees - sorties};
-  }
+/* ---------- render ---------- */
+function render() {
+  const filtered = state.transactions
+    .filter((t) => inPeriod(t.date, state.period))
+    .sort((a, b) => new Date(b.date) - new Date(a.date));
+  const entries = filtered.filter((t) => t.type === "in");
+  const outs = filtered.filter((t) => t.type === "out");
+  const balance = entries.reduce((s, t) => s + t.amount, 0) - outs.reduce((s, t) => s + t.amount, 0);
 
-  const labels = {semaine:'cette semaine', mois:'ce mois-ci', annee:'cette année'};
+  const spendMap = {};
+  outs.forEach((t) => { spendMap[t.tag] = (spendMap[t.tag] || 0) + t.amount; });
+  const spendTotal = Object.values(spendMap).reduce((a, b) => a + b, 0) || 1;
+  const spendByTag = Object.entries(spendMap)
+    .map(([tag, val]) => ({ tag, val, pct: Math.round((val / spendTotal) * 100) }))
+    .sort((a, b) => b.val - a.val);
 
-  function animateAmount(from, to){
-    const el = document.getElementById('krzAmount');
-    const duration = 700;
-    const start = performance.now();
-    el.classList.remove('up','down');
-    el.classList.add(to >= 0 ? 'up' : 'down');
-    el.classList.add('roll');
-    function step(now){
-      const p = Math.min(1, (now - start) / duration);
-      const eased = 1 - Math.pow(1 - p, 3);
-      const val = from + (to - from) * eased;
-      el.textContent = fmt(val);
-      if(p < 1) requestAnimationFrame(step);
-      else {
-        el.textContent = fmt(to);
-        setTimeout(()=>el.classList.remove('roll'), 300);
-      }
-    }
-    requestAnimationFrame(step);
-  }
+  const isEmpty = state.transactions.length === 0;
+  const amountEnabled = !!state.amount;
 
-  function render(highlightId){
-    const list = filtered();
-    const {entrees, sorties, solde} = computeTotals(list);
-
-    document.getElementById('krzPeriodLabel').textContent = 'Il vous reste ' + labels[currentPeriod];
-    document.getElementById('krzSub').innerHTML = `<b>${fmt(entrees)}€</b> d'entrées · <b>${fmt(sorties)}€</b> de sorties`;
-
-    animateAmount(displayedValue, solde);
-    displayedValue = solde;
-
-    const listEl = document.getElementById('krzList');
-    if(list.length === 0){
-      listEl.innerHTML = '<div class="krz-empty">Aucun mouvement '+labels[currentPeriod]+'. Ajoutez votre première entrée ou sortie.</div>';
-    } else {
-      const sorted = [...list].sort((a,b)=> new Date(b.date) - new Date(a.date));
-      listEl.innerHTML = sorted.map(t => `
-        <div class="krz-row ${t.type}${t.id === highlightId ? ' krz-row-new' : ''}" data-id="${t.id}">
-          <div class="krz-row-main">
-            <div class="krz-row-title">${escapeHtml(t.title)}</div>
-            <div class="krz-row-date">${new Date(t.date).toLocaleDateString('fr-FR', {day:'2-digit', month:'short'})}</div>
-          </div>
-          <div class="krz-row-amount">${t.type === 'entree' ? '+' : '−'}${fmt(t.amount)}€</div>
-          <button class="krz-row-del" data-del="${t.id}" aria-label="Supprimer">✕</button>
+  function renderColumn(title, dot, items, sign) {
+    const rows = items.slice(0, 6).map((t) => `
+      <div class="row ${t.id === state.lastAddedId ? "kriz-row-in" : ""}">
+        <span class="row-label">${escapeHtml(t.label)}</span>
+        <span class="row-amount" style="color:${dot}">${sign}${t.amount.toLocaleString("fr-FR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €</span>
+      </div>`).join("");
+    return `
+      <div class="col-card">
+        <div class="col-title"><span class="dot" style="background:${dot}"></span>${title.toUpperCase()}</div>
+        <div style="display:flex;flex-direction:column;gap:9px;">
+          ${rows || `<div class="empty">—</div>`}
         </div>
-      `).join('');
-    }
-
-    renderChart(entrees, sorties);
-
-    if(highlightId){
-      const header = document.querySelector('.krz-header');
-      const type = transactions.find(t => t.id === highlightId)?.type;
-      const pulseClass = type === 'entree' ? 'pulse-entree' : 'pulse-sortie';
-      header.classList.remove('pulse-entree','pulse-sortie');
-      void header.offsetWidth; // reset animation
-      header.classList.add(pulseClass);
-      setTimeout(()=>header.classList.remove(pulseClass), 700);
-    }
+      </div>`;
   }
 
-  function escapeHtml(s){
-    const d = document.createElement('div');
-    d.textContent = s;
-    return d.innerHTML;
-  }
-
-  function renderChart(entrees, sorties){
-    const ctx = document.getElementById('krzChart');
-    const total = entrees + sorties;
-    const data = total === 0 ? [1] : [entrees, sorties];
-    const bg = total === 0 ? ['#E4E9DD'] : ['#2F7D4F', '#B4432E'];
-
-    if(chart) chart.destroy();
-    chart = new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        datasets: [{
-          data: data,
-          backgroundColor: bg,
-          borderColor: '#EEF1EA',
-          borderWidth: 3,
-        }]
-      },
-      options: {
-        cutout: '68%',
-        plugins: { legend: {display:false}, tooltip:{enabled: total>0} },
-        animation: { animateRotate:true, duration: 600 }
-      }
+  function renderDonut() {
+    if (!spendByTag.length) return "";
+    let acc = 0;
+    const stops = spendByTag.map((s) => {
+      const from = acc;
+      acc += s.pct;
+      return `${TAG_COLORS[s.tag] || "#5A6478"} ${from}% ${acc}%`;
     });
-
-    const legend = document.getElementById('krzLegend');
-    legend.innerHTML = `
-      <div class="krz-legend-item"><span><span class="krz-legend-dot" style="background:#2F7D4F"></span>Entrées</span><span>${fmt(entrees)}€</span></div>
-      <div class="krz-legend-item"><span><span class="krz-legend-dot" style="background:#B4432E"></span>Sorties</span><span>${fmt(sorties)}€</span></div>
-      <div class="krz-legend-item"><span>Mouvements ${labels[currentPeriod]}</span><span>${filtered().length}</span></div>
-    `;
+    const gradient = `conic-gradient(${stops.join(", ")})`;
+    const legend = spendByTag.slice(0, 5).map((s) => `
+      <div class="legend-row">
+        <span class="legend-label"><span class="dot" style="background:${TAG_COLORS[s.tag] || "#5A6478"}"></span>${escapeHtml(s.tag)}</span>
+        <span class="legend-pct">${s.pct}%</span>
+      </div>`).join("");
+    return `
+      <div style="margin-top:28px;">
+        <div class="stats-title">Où va mon argent ?</div>
+        <div class="stats-row">
+          <div class="donut" style="background:${gradient}"><div class="donut-hole"></div></div>
+          <div class="legend">${legend}</div>
+        </div>
+      </div>`;
   }
 
-  // tabs
-  document.getElementById('krzTabs').addEventListener('click', (e)=>{
-    const btn = e.target.closest('.krz-tab');
-    if(!btn) return;
-    document.querySelectorAll('.krz-tab').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
-    currentPeriod = btn.dataset.period;
-    render();
+  const html = `
+    <div class="wrap">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:28px 0 8px;">
+        <div style="font-size:20px;font-weight:800;letter-spacing:-0.02em;">Kriz</div>
+      </div>
+
+      <div class="period-tabs">
+        ${["Semaine", "Mois", "Année"].map((p) => `
+          <button class="period-tab ${state.period === p ? "active" : ""}" data-period="${p}">${p}</button>
+        `).join("")}
+      </div>
+
+      <div style="text-align:center;padding:36px 0 28px;">
+        <div class="balance-label">Il vous reste</div>
+        <div class="balance-value" style="color:${balance < 0 ? COLORS.coral : "#F3F5F9"}">${formatMoney(balance)}</div>
+        <div class="balance-period">${periodLabel(state.period)}</div>
+      </div>
+
+      ${isEmpty
+        ? `<div style="text-align:center;padding:20px 0 32px;">
+             <div style="font-size:17px;font-weight:700;margin-bottom:6px;">Commencez votre budget</div>
+             <div style="color:#8892A4;font-size:14px;">Ajoutez votre première entrée ou sortie.</div>
+           </div>`
+        : `<div class="cols">${renderColumn("Entrées", COLORS.green, entries, "+")}${renderColumn("Sorties", COLORS.coral, outs, "−")}</div>`
+      }
+
+      <div class="add-zone">
+        <div class="add-row">
+          <button id="btn-plus" class="action-btn ${amountEnabled ? "enabled" : ""}" style="background:${amountEnabled ? COLORS.green : "#1E2635"};color:${amountEnabled ? "#0A0E16" : "#8892A4"};box-shadow:${amountEnabled ? `0 0 0 3px ${COLORS.green}22` : "none"}">${ICONS.plus}</button>
+          <input id="label-input" class="add-input" placeholder="Libellé (facultatif)" value="${escapeHtml(state.label)}" />
+          <button id="btn-minus" class="action-btn ${amountEnabled ? "enabled" : ""}" style="background:${amountEnabled ? COLORS.coral : "#1E2635"};color:${amountEnabled ? "#0A0E16" : "#8892A4"};box-shadow:${amountEnabled ? `0 0 0 3px ${COLORS.coral}22` : "none"}">${ICONS.minus}</button>
+        </div>
+        <div class="hint-row">
+          <span class="hint">+ ajoute direct en entrée</span>
+          <span class="hint">− ajoute direct en sortie</span>
+        </div>
+
+        <input id="amount-input" class="amount-input" placeholder="Montant" inputmode="decimal" value="${escapeHtml(state.amount)}" />
+
+        <div class="tags-row">
+          ${state.tags.map((t) => {
+            const active = state.activeTag === t;
+            const color = TAG_COLORS[t] || COLORS.green;
+            return `<button class="tag-btn" data-tag="${escapeHtml(t)}" style="border-color:${active ? color : "#1E2635"};background:${active ? color + "1a" : "transparent"};color:${active ? color : "#8892A4"}">#${escapeHtml(t)}</button>`;
+          }).join("")}
+          <button id="new-tag-btn" class="tag-btn dashed">+ Nouveau</button>
+        </div>
+      </div>
+
+      ${renderDonut()}
+
+      <div class="quote">« Savoir ce qu'il te reste, simplement. »</div>
+    </div>
+
+    <div class="bottomnav">
+      <div class="navicon active">${ICONS.home}<span>Accueil</span></div>
+      <div class="navicon">${ICONS.history}<span>Historique</span></div>
+      <div class="navicon">${ICONS.tag}<span>Catégories</span></div>
+      <div class="navicon">${ICONS.settings}<span>Paramètres</span></div>
+    </div>
+  `;
+
+  document.getElementById("root").innerHTML = html;
+  wireEvents();
+}
+
+function wireEvents() {
+  document.querySelectorAll(".period-tab").forEach((btn) => {
+    btn.addEventListener("click", () => setPeriod(btn.dataset.period));
   });
 
-  // modal open/close
-  const overlay = document.getElementById('krzOverlay');
-  function openModal(type){
-    currentType = type;
-    document.getElementById('krzModalTitle').textContent = type === 'entree' ? 'Nouvelle entrée' : 'Nouvelle sortie';
-    document.getElementById('typeEntree').classList.toggle('active', type==='entree');
-    document.getElementById('typeSortie').classList.toggle('active', type==='sortie');
-    document.getElementById('krzTitle').value = '';
-    document.getElementById('krzAmountInput').value = '';
-    overlay.classList.add('open');
-    setTimeout(()=>document.getElementById('krzTitle').focus(), 250);
-  }
-  function closeModal(){ overlay.classList.remove('open'); }
+  document.getElementById("btn-plus").addEventListener("click", () => pressAndSubmit("in", "btn-plus"));
+  document.getElementById("btn-minus").addEventListener("click", () => pressAndSubmit("out", "btn-minus"));
 
-  document.getElementById('btnAddEntree').addEventListener('click', ()=>openModal('entree'));
-  document.getElementById('btnAddSortie').addEventListener('click', ()=>openModal('sortie'));
-  document.getElementById('krzCancel').addEventListener('click', closeModal);
-  overlay.addEventListener('click', (e)=>{ if(e.target === overlay) closeModal(); });
+  const labelInput = document.getElementById("label-input");
+  labelInput.addEventListener("input", (e) => onLabelInput(e.target.value));
 
-  document.getElementById('typeEntree').addEventListener('click', ()=>{
-    currentType = 'entree';
-    document.getElementById('typeEntree').classList.add('active');
-    document.getElementById('typeSortie').classList.remove('active');
-    document.getElementById('krzModalTitle').textContent = 'Nouvelle entrée';
-  });
-  document.getElementById('typeSortie').addEventListener('click', ()=>{
-    currentType = 'sortie';
-    document.getElementById('typeSortie').classList.add('active');
-    document.getElementById('typeEntree').classList.remove('active');
-    document.getElementById('krzModalTitle').textContent = 'Nouvelle sortie';
+  const amountInput = document.getElementById("amount-input");
+  amountInput.addEventListener("input", (e) => onAmountInput(e.target.value));
+
+  document.querySelectorAll(".tag-btn[data-tag]").forEach((btn) => {
+    btn.addEventListener("click", () => pickTag(btn.dataset.tag));
   });
 
-  document.getElementById('krzValider').addEventListener('click', async ()=>{
-    const title = document.getElementById('krzTitle').value.trim();
-    const amountRaw = document.getElementById('krzAmountInput').value;
-    const amount = parseFloat(amountRaw);
-    if(!title || !amount || amount <= 0){
-      document.getElementById('krzAmountInput').style.borderColor = 'var(--rust)';
-      return;
-    }
-    const t = {
-      id: Date.now().toString(36) + Math.random().toString(36).slice(2,6),
-      title, amount, type: currentType,
-      date: new Date().toISOString()
-    };
-    transactions.push(t);
-    closeModal();
-    await saveData();
-    render(t.id);
-  });
+  document.getElementById("new-tag-btn").addEventListener("click", newTag);
+}
 
-  // delete
-  document.getElementById('krzList').addEventListener('click', async (e)=>{
-    const btn = e.target.closest('[data-del]');
-    if(!btn) return;
-    transactions = transactions.filter(t => t.id !== btn.dataset.del);
-    await saveData();
-    render();
-  });
-
-  loadData();
-})();
+render();
 </script>
 </body>
 </html>
